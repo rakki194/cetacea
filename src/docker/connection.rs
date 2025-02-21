@@ -42,7 +42,7 @@ impl UnixSocketConnection {
     pub fn new() -> Self {
         Self {
             client: HyperClient::builder(TokioExecutor::new())
-                .build(UnixConnector::default()),
+                .build(UnixConnector),
         }
     }
 }

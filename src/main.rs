@@ -2,7 +2,7 @@
 
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
-use colored::*;
+use colored::{ColoredString, Colorize};
 
 mod docker;
 mod error;
@@ -17,7 +17,7 @@ fn format_duration(timestamp: i64) -> String {
     let duration = now - timestamp;
 
     if duration < 60 {
-        format!("{} seconds ago", duration)
+        format!("{duration} seconds ago")
     } else if duration < 3600 {
         format!("{} minutes ago", duration / 60)
     } else if duration < 86400 {
@@ -35,7 +35,7 @@ fn format_ports(ports: &[Port]) -> String {
     ports
         .iter()
         .map(|p| {
-            let public = p.public_port.map_or(String::new(), |port| format!("{}:", port));
+            let public = p.public_port.map_or(String::new(), |port| format!("{port}:"));
             let ip = p.ip.as_deref().unwrap_or("");
             format!("{}{}:{}/{}", ip, public, p.private_port, p.protocol.to_lowercase())
         })
@@ -50,8 +50,8 @@ fn format_container_status(container: &Container) -> ColoredString {
                 match health.status.as_str() {
                     "healthy" => "●".green(),
                     "unhealthy" => {
-                        let latest_log = health.log.last().map(|log| log.output.as_str()).unwrap_or("");
-                        format!("● ({})", latest_log).red()
+                        let latest_log = health.log.last().map_or("", |log| log.output.as_str());
+                        format!("● ({latest_log})").red()
                     }
                     _ => "●".yellow()
                 }
@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("\n{} {} ({})", 
                 format_container_status(&container),
                 container.names.join(", "), 
-                container.id[..12].to_string()
+                &container.id[..12]
             );
             println!(" {}", container.image);
             println!(" {}", container.command);
@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("\n{} {} ({})", 
                 format_container_status(&container),
                 container.names.join(", "), 
-                container.id[..12].to_string()
+                &container.id[..12]
             );
             println!(" {}", container.image);
             println!(" {}", container.command);
