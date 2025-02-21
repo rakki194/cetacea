@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 use colored::*;

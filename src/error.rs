@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
