@@ -12,11 +12,11 @@ pub struct DockerClient {
 }
 
 impl DockerClient {
-    pub async fn new() -> Result<Self, WhaleError> {
-        let connection = ConnectionFactory::create()?;
-        Ok(Self {
+    pub fn new() -> Self {
+        let connection = ConnectionFactory::create();
+        Self {
             connection: Box::new(connection),
-        })
+        }
     }
 
     pub async fn list_containers(&self) -> Result<Vec<Container>, WhaleError> {

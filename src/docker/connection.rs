@@ -19,15 +19,15 @@ pub trait Connection: Send + Sync {
 pub struct ConnectionFactory;
 
 impl ConnectionFactory {
-    pub fn create() -> Result<impl Connection, WhaleError> {
+    pub fn create() -> impl Connection {
         #[cfg(target_os = "linux")]
         {
-            Ok(UnixSocketConnection::new())
+            UnixSocketConnection::new()
         }
 
         #[cfg(target_os = "windows")]
         {
-            Ok(HttpConnection::new())
+            HttpConnection::new()
         }
     }
 }

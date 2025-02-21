@@ -67,7 +67,7 @@ fn format_container_status(container: &Container) -> ColoredString {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let client = DockerClient::new().await?;
+    let client = DockerClient::new();
     let containers = client.list_containers().await?;
 
     let (running, stopped): (Vec<_>, Vec<_>) =
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if stopped.is_empty() {
-        println!("No stopped containers");
+        println!("\nNo stopped containers");
     } else {
         for container in stopped {
             println!(

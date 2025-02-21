@@ -8,6 +8,7 @@ pub enum WhaleError {
     Connection(String),
 
     #[error("Docker API error: {0}")]
+    #[allow(dead_code)]
     Api(String),
 
     #[error("Serialization error: {0}")]
