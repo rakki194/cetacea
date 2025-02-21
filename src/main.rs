@@ -5,7 +5,7 @@ use colored::*;
 mod docker;
 mod error;
 
-use crate::docker::{DockerClient, Container, Port, Health};
+use crate::docker::{DockerClient, Container, Port};
 
 fn format_duration(timestamp: i64) -> String {
     let now = SystemTime::now()
