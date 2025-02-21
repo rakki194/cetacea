@@ -19,6 +19,8 @@ pub struct Container {
     pub state: String,
     #[serde(rename = "Status")]
     pub status: String,
+    #[serde(rename = "Health")]
+    pub health: Option<Health>,
     #[serde(rename = "Ports")]
     pub ports: Vec<Port>,
 }
@@ -34,4 +36,23 @@ pub struct Port {
     pub public_port: Option<u16>,
     #[serde(rename = "Type")]
     pub protocol: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Health {
+    pub status: String,
+    #[serde(rename = "FailingStreak")]
+    pub failing_streak: i32,
+    pub log: Vec<HealthLog>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct HealthLog {
+    pub start: String,
+    pub end: String,
+    #[serde(rename = "ExitCode")]
+    pub exit_code: i32,
+    pub output: String,
 }

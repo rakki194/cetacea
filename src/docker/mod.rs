@@ -3,7 +3,7 @@ mod models;
 
 use crate::error::WhaleError;
 use connection::{Connection, ConnectionFactory};
-pub use models::{Container, Port};
+pub use models::{Container, Port, Health, HealthLog};
 
 pub struct DockerClient {
     connection: Box<dyn Connection>,

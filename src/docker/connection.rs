@@ -51,7 +51,7 @@ impl Connection for UnixSocketConnection {
     async fn list_containers(&self) -> Result<Vec<Container>, WhaleError> {
         let uri = hyperlocal::Uri::new(
             "/var/run/docker.sock",
-            "/v1.41/containers/json?all=true"
+            "/v1.41/containers/json?all=true&health=true"
         );
 
         let req = Request::builder()
