@@ -12,6 +12,7 @@ pub struct Container {
     #[serde(rename = "Image")]
     pub image: String,
     #[serde(rename = "ImageID")]
+    #[allow(dead_code)]
     pub image_id: String,
     #[serde(rename = "Command")]
     pub command: String,
@@ -33,9 +34,9 @@ pub struct Port {
     #[serde(rename = "IP")]
     pub ip: Option<String>,
     #[serde(rename = "PrivatePort")]
-    pub private_port: u16,
+    pub internal: u16,
     #[serde(rename = "PublicPort")]
-    pub public_port: Option<u16>,
+    pub external: Option<u16>,
     #[serde(rename = "Type")]
     pub protocol: String,
 }
@@ -45,6 +46,7 @@ pub struct Port {
 pub struct Health {
     pub status: String,
     #[serde(rename = "FailingStreak")]
+    #[allow(dead_code)]
     pub failing_streak: i32,
     pub log: Vec<HealthLog>,
 }
@@ -52,9 +54,12 @@ pub struct Health {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct HealthLog {
+    #[allow(dead_code)]
     pub start: String,
+    #[allow(dead_code)]
     pub end: String,
     #[serde(rename = "ExitCode")]
+    #[allow(dead_code)]
     pub exit_code: i32,
     pub output: String,
 }

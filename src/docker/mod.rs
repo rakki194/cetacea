@@ -13,7 +13,7 @@ pub struct DockerClient {
 
 impl DockerClient {
     pub async fn new() -> Result<Self, WhaleError> {
-        let connection = ConnectionFactory::create().await?;
+        let connection = ConnectionFactory::create()?;
         Ok(Self {
             connection: Box::new(connection),
         })

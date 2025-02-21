@@ -1,19 +1,21 @@
 #![warn(clippy::all, clippy::pedantic)]
 
+use colored::{ColoredString, Colorize};
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
-use colored::{ColoredString, Colorize};
 
 mod docker;
 mod error;
 
-use crate::docker::{DockerClient, Container, Port};
+use crate::docker::{Container, DockerClient, Port};
 
 fn format_duration(timestamp: i64) -> String {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() as i64;
+        .as_secs()
+        .try_into()
+        .unwrap_or(i64::MAX);
     let duration = now - timestamp;
 
     if duration < 60 {
@@ -35,9 +37,9 @@ fn format_ports(ports: &[Port]) -> String {
     ports
         .iter()
         .map(|p| {
-            let public = p.public_port.map_or(String::new(), |port| format!("{port}:"));
+            let public = p.external.map_or(String::new(), |port| format!("{port}:"));
             let ip = p.ip.as_deref().unwrap_or("");
-            format!("{}{}:{}/{}", ip, public, p.private_port, p.protocol.to_lowercase())
+            format!("{}{}:{}/{}", ip, public, p.internal, p.protocol.to_lowercase())
         })
         .collect::<Vec<_>>()
         .join(", ")
@@ -53,13 +55,13 @@ fn format_container_status(container: &Container) -> ColoredString {
                         let latest_log = health.log.last().map_or("", |log| log.output.as_str());
                         format!("● ({latest_log})").red()
                     }
-                    _ => "●".yellow()
+                    _ => "●".yellow(),
                 }
             } else {
                 "●".green()
             }
         }
-        _ => "●".red()
+        _ => "●".red(),
     }
 }
 
@@ -68,17 +70,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = DockerClient::new().await?;
     let containers = client.list_containers().await?;
 
-    let (running, stopped): (Vec<_>, Vec<_>) = containers
-        .into_iter()
-        .partition(|c| c.state == "running");
+    let (running, stopped): (Vec<_>, Vec<_>) =
+        containers.into_iter().partition(|c| c.state == "running");
 
     if running.is_empty() {
         println!("No running containers");
     } else {
         for container in running {
-            println!("\n{} {} ({})", 
+            println!(
+                "\n{} {} ({})",
                 format_container_status(&container),
-                container.names.join(", "), 
+                container.names.join(", "),
                 &container.id[..12]
             );
             println!(" {}", container.image);
@@ -86,7 +88,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!(" {}", format_duration(container.created));
             println!("󰔵 {}", container.status);
             println!("󰈀 {}", format_ports(&container.ports));
-            
+
             if let Some(health) = &container.health {
                 if health.status == "unhealthy" {
                     if let Some(last_log) = health.log.last() {
@@ -101,9 +103,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("No stopped containers");
     } else {
         for container in stopped {
-            println!("\n{} {} ({})", 
+            println!(
+                "\n{} {} ({})",
                 format_container_status(&container),
-                container.names.join(", "), 
+                container.names.join(", "),
                 &container.id[..12]
             );
             println!(" {}", container.image);
