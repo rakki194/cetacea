@@ -12,13 +12,16 @@ use super::models::Container;
 use crate::error::WhaleError;
 
 #[async_trait]
+#[allow(dead_code)]  // Used through trait objects
 pub trait Connection: Send + Sync {
     async fn list_containers(&self) -> Result<Vec<Container>, WhaleError>;
 }
 
+#[allow(dead_code)]  // Used as the factory for creating connections
 pub struct ConnectionFactory;
 
 impl ConnectionFactory {
+    #[allow(dead_code)]  // Used to create connections
     pub fn create() -> impl Connection {
         #[cfg(target_os = "linux")]
         {

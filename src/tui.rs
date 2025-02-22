@@ -25,6 +25,7 @@ use crate::format_duration;
 
 pub struct App {
     pub containers: Vec<Container>,
+    #[allow(dead_code)]  // Used through cloning in the update thread
     client: DockerClient,
     update_rx: Receiver<Vec<Container>>,
 }
