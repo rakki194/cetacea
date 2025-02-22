@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let app = App::new(containers);
+    let mut app = App::new(containers, client);
     app.run()?;
 
     Ok(())

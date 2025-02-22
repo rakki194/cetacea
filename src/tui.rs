@@ -1,6 +1,9 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 use std::io::{self, stdout, Stdout};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
+use std::time::Duration;
 
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -16,19 +19,52 @@ use ratatui::{
     Frame, Terminal,
 };
 
-use crate::docker::{Container, Port};
+use crate::docker::{Container, DockerClient, Port};
 use crate::format_duration;
 
 pub struct App {
     pub containers: Vec<Container>,
+    client: DockerClient,
+    update_rx: Receiver<Vec<Container>>,
 }
 
 impl App {
-    pub fn new(containers: Vec<Container>) -> Self {
-        Self { containers }
+    pub fn new(containers: Vec<Container>, client: DockerClient) -> Self {
+        let (tx, rx) = mpsc::channel();
+        
+        // Spawn container update thread
+        let update_client = client.clone();
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_secs(1));
+                match update_client.list_containers_blocking() {
+                    Ok(mut containers) => {
+                        // Sort containers: running first, then by name
+                        containers.sort_by(|a, b| {
+                            let state_order = b.state.cmp(&a.state);
+                            if state_order == std::cmp::Ordering::Equal {
+                                a.names[0].cmp(&b.names[0])
+                            } else {
+                                state_order
+                            }
+                        });
+                        if tx.send(containers).is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => continue,
+                }
+            }
+        });
+
+        Self {
+            containers,
+            client,
+            update_rx: rx,
+        }
     }
 
-    pub fn run(&self) -> io::Result<()> {
+    pub fn run(&mut self) -> io::Result<()> {
         enable_raw_mode()?;
         let mut stdout = stdout();
         execute!(stdout, EnterAlternateScreen)?;
@@ -45,13 +81,21 @@ impl App {
         res
     }
 
-    fn run_app(&self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> io::Result<()> {
+    fn run_app(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> io::Result<()> {
         loop {
+            // Check for container updates
+            if let Ok(new_containers) = self.update_rx.try_recv() {
+                self.containers = new_containers;
+            }
+
             terminal.draw(|f| self.ui(f))?;
 
-            if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    return Ok(());
+            // Poll for user input with a timeout
+            if event::poll(Duration::from_millis(100))? {
+                if let Event::Key(key) = event::read()? {
+                    if key.code == KeyCode::Char('q') {
+                        return Ok(());
+                    }
                 }
             }
         }
