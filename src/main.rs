@@ -6,8 +6,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 mod docker;
 mod error;
+mod tui;
 
 use crate::docker::{Container, DockerClient, Port};
+use crate::tui::App;
 
 fn format_duration(timestamp: i64) -> String {
     let now = SystemTime::now()
@@ -68,55 +70,20 @@ fn format_container_status(container: &Container) -> ColoredString {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let client = DockerClient::new();
-    let containers = client.list_containers().await?;
-
-    let (running, stopped): (Vec<_>, Vec<_>) =
-        containers.into_iter().partition(|c| c.state == "running");
-
-    if running.is_empty() {
-        println!("No running containers");
-    } else {
-        for container in running {
-            println!(
-                "\n{} {} ({})",
-                format_container_status(&container),
-                container.names.join(", "),
-                &container.id[..12]
-            );
-            println!(" {}", container.image);
-            println!(" {}", container.command);
-            println!(" {}", format_duration(container.created));
-            println!("󰔵 {}", container.status);
-            println!("󰈀 {}", format_ports(&container.ports));
-
-            if let Some(health) = &container.health {
-                if health.status == "unhealthy" {
-                    if let Some(last_log) = health.log.last() {
-                        println!(" Last health check failed: {}", last_log.output.red());
-                    }
-                }
-            }
+    let mut containers = client.list_containers().await?;
+    
+    // Sort containers: running first, then by name
+    containers.sort_by(|a, b| {
+        let state_order = b.state.cmp(&a.state);
+        if state_order == std::cmp::Ordering::Equal {
+            a.names[0].cmp(&b.names[0])
+        } else {
+            state_order
         }
-    }
+    });
 
-    if stopped.is_empty() {
-        println!("\nNo stopped containers");
-    } else {
-        for container in stopped {
-            println!(
-                "\n{} {} ({})",
-                format_container_status(&container),
-                container.names.join(", "),
-                &container.id[..12]
-            );
-            println!(" {}", container.image);
-            println!(" {}", container.command);
-            println!(" {}", format_duration(container.created));
-            println!("󰔵 {}", container.status);
-            println!("󰈀 {}", format_ports(&container.ports));
-        }
-    }
+    let app = App::new(containers);
+    app.run()?;
 
-    println!();
     Ok(())
 }
