@@ -38,22 +38,19 @@ impl App {
         thread::spawn(move || {
             loop {
                 thread::sleep(Duration::from_secs(1));
-                match update_client.list_containers_blocking() {
-                    Ok(mut containers) => {
-                        // Sort containers: running first, then by name
-                        containers.sort_by(|a, b| {
-                            let state_order = b.state.cmp(&a.state);
-                            if state_order == std::cmp::Ordering::Equal {
-                                a.names[0].cmp(&b.names[0])
-                            } else {
-                                state_order
-                            }
-                        });
-                        if tx.send(containers).is_err() {
-                            break;
+                if let Ok(mut containers) = update_client.list_containers_blocking() {
+                    // Sort containers: running first, then by name
+                    containers.sort_by(|a, b| {
+                        let state_order = b.state.cmp(&a.state);
+                        if state_order == std::cmp::Ordering::Equal {
+                            a.names[0].cmp(&b.names[0])
+                        } else {
+                            state_order
                         }
+                    });
+                    if tx.send(containers).is_err() {
+                        break;
                     }
-                    Err(_) => {}
                 }
             }
         });

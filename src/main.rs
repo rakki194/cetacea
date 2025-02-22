@@ -7,7 +7,7 @@ mod docker;
 mod error;
 mod tui;
 
-use crate::docker::{Container, DockerClient};
+use crate::docker::DockerClient;
 use crate::tui::App;
 
 fn format_duration(timestamp: i64) -> String {
