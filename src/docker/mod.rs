@@ -30,7 +30,7 @@ pub struct DockerClient {
 impl DockerClient {
     pub fn new() -> Self {
         Self {
-            client: Client::builder(TokioExecutor::new()).build(hyperlocal::UnixConnector::default()),
+            client: Client::builder(TokioExecutor::new()).build(hyperlocal::UnixConnector),
         }
     }
 

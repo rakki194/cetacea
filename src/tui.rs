@@ -1,7 +1,8 @@
 #![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
 
 use std::io::{self, stdout, Stdout};
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
 
@@ -52,7 +53,7 @@ impl App {
                             break;
                         }
                     }
-                    Err(_) => continue,
+                    Err(_) => {}
                 }
             }
         });
@@ -114,7 +115,7 @@ impl App {
         let rows = (container_count as f32 / optimal_columns as f32).ceil() as usize;
         let mut constraints = vec![];
         for _ in 0..rows {
-            constraints.push(Constraint::Ratio(1, rows as u32));
+            constraints.push(Constraint::Ratio(1, u32::try_from(rows).unwrap_or(1)));
         }
 
         let vertical_chunks = Layout::default()
@@ -124,7 +125,7 @@ impl App {
 
         let mut row_constraints = vec![];
         for _ in 0..optimal_columns {
-            row_constraints.push(Constraint::Ratio(1, optimal_columns as u32));
+            row_constraints.push(Constraint::Ratio(1, u32::try_from(optimal_columns).unwrap_or(1)));
         }
 
         for (row_idx, row) in vertical_chunks.iter().enumerate() {
@@ -137,14 +138,14 @@ impl App {
                 let container_idx = row_idx * optimal_columns + col_idx;
                 if container_idx < container_count {
                     if let Some(container) = self.containers.get(container_idx) {
-                        self.render_container(f, container, horizontal_chunks[col_idx]);
+                        Self::render_container(f, container, horizontal_chunks[col_idx]);
                     }
                 }
             }
         }
     }
 
-    fn render_container(&self, f: &mut Frame, container: &Container, area: Rect) {
+    fn render_container(f: &mut Frame, container: &Container, area: Rect) {
         let status_color = match container.state.as_str() {
             "running" => {
                 if let Some(health) = &container.health {
@@ -188,7 +189,7 @@ impl App {
             Line::from(vec![Span::raw(&container.command)]),
             Line::from(vec![Span::raw(format_duration(container.created))]),
             Line::from(vec![Span::raw(&container.status)]),
-            Line::from(vec![Span::raw(format!("Ports: {}", ports_str))]),
+            Line::from(vec![Span::raw(format!("Ports: {ports_str}"))]),
         ]);
 
         let paragraph = Paragraph::new(content)

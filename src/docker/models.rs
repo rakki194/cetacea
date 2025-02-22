@@ -48,6 +48,7 @@ pub struct Health {
     #[serde(rename = "FailingStreak")]
     #[allow(dead_code)]
     pub failing_streak: i32,
+    #[allow(dead_code)]
     pub log: Vec<HealthLog>,
 }
 
@@ -61,5 +62,6 @@ pub struct HealthLog {
     #[serde(rename = "ExitCode")]
     #[allow(dead_code)]
     pub exit_code: i32,
+    #[allow(dead_code)]
     pub output: String,
 }

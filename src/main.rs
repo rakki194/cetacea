@@ -1,6 +1,5 @@
 #![warn(clippy::all, clippy::pedantic)]
 
-use colored::{ColoredString, Colorize};
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -8,7 +7,7 @@ mod docker;
 mod error;
 mod tui;
 
-use crate::docker::{Container, DockerClient, Port};
+use crate::docker::{Container, DockerClient};
 use crate::tui::App;
 
 fn format_duration(timestamp: i64) -> String {
@@ -28,42 +27,6 @@ fn format_duration(timestamp: i64) -> String {
         format!("{} hours ago", duration / 3600)
     } else {
         format!("{} days ago", duration / 86400)
-    }
-}
-
-fn format_ports(ports: &[Port]) -> String {
-    if ports.is_empty() {
-        return "None".to_string();
-    }
-
-    ports
-        .iter()
-        .map(|p| {
-            let public = p.external.map_or(String::new(), |port| format!("{port}:"));
-            let ip = p.ip.as_deref().unwrap_or("");
-            format!("{}{}:{}/{}", ip, public, p.internal, p.protocol.to_lowercase())
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-fn format_container_status(container: &Container) -> ColoredString {
-    match container.state.as_str() {
-        "running" => {
-            if let Some(health) = &container.health {
-                match health.status.as_str() {
-                    "healthy" => "●".green(),
-                    "unhealthy" => {
-                        let latest_log = health.log.last().map_or("", |log| log.output.as_str());
-                        format!("● ({latest_log})").red()
-                    }
-                    _ => "●".yellow(),
-                }
-            } else {
-                "●".green()
-            }
-        }
-        _ => "●".red(),
     }
 }
 
