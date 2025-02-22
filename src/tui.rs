@@ -31,9 +31,21 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(containers: Vec<Container>, client: DockerClient) -> Self {
+    pub fn new(mut containers: Vec<Container>, client: DockerClient) -> Self {
         let (tx, rx) = mpsc::channel();
         
+        // Sort containers: running first, then by name
+        containers.sort_by(|a, b| {
+            // First sort by state (running before stopped)
+            let a_running = a.state == "running";
+            let b_running = b.state == "running";
+            match (a_running, b_running) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => a.names[0].cmp(&b.names[0]), // If states are equal, sort by name
+            }
+        });
+
         // Spawn container update thread
         let update_client = client.clone();
         thread::spawn(move || {
@@ -42,11 +54,13 @@ impl App {
                 if let Ok(mut containers) = update_client.list_containers_blocking() {
                     // Sort containers: running first, then by name
                     containers.sort_by(|a, b| {
-                        let state_order = b.state.cmp(&a.state);
-                        if state_order == std::cmp::Ordering::Equal {
-                            a.names[0].cmp(&b.names[0])
-                        } else {
-                            state_order
+                        // First sort by state (running before stopped)
+                        let a_running = a.state == "running";
+                        let b_running = b.state == "running";
+                        match (a_running, b_running) {
+                            (true, false) => std::cmp::Ordering::Less,
+                            (false, true) => std::cmp::Ordering::Greater,
+                            _ => a.names[0].cmp(&b.names[0]), // If states are equal, sort by name
                         }
                     });
                     if tx.send(containers).is_err() {
@@ -198,7 +212,7 @@ impl App {
     }
 }
 
-fn format_ports(ports: &[Port]) -> String {
+pub fn format_ports(ports: &[Port]) -> String {
     if ports.is_empty() {
         return "None".to_string();
     }
@@ -206,9 +220,28 @@ fn format_ports(ports: &[Port]) -> String {
     ports
         .iter()
         .map(|p| {
-            let public = p.external.map_or(String::new(), |port| format!("{port}:"));
-            let ip = p.ip.as_deref().unwrap_or("");
-            format!("{}{}:{}/{}", ip, public, p.internal, p.protocol.to_lowercase())
+            let mut parts = Vec::new();
+            
+            if let Some(ref ip) = p.ip {
+                if !ip.is_empty() {
+                    parts.push(ip.clone());
+                }
+            }
+            
+            if let Some(external) = p.external {
+                parts.push(external.to_string());
+            }
+            
+            parts.push(p.internal.to_string());
+            
+            // Format as address:port/protocol
+            let addr_port = if parts.len() > 1 {
+                parts.join(":")
+            } else {
+                parts[0].to_string()
+            };
+            
+            format!("{}/{}", addr_port, p.protocol.to_lowercase())
         })
         .collect::<Vec<_>>()
         .join(", ")

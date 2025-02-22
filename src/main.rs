@@ -6,6 +6,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 mod docker;
 mod error;
 mod tui;
+#[cfg(test)]
+mod tests;
 
 use crate::docker::DockerClient;
 use crate::tui::App;

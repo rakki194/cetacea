@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 mod connection;
-mod models;
+pub mod models;
 
 use http_body_util::{BodyExt, Empty};
 use hyper::body::Bytes;
