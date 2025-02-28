@@ -1,39 +1,42 @@
 #![warn(clippy::all, clippy::pedantic)]
 
 use std::error::Error;
-use std::time::{SystemTime, UNIX_EPOCH};
+use clap::Parser;
+use log::{info, warn};
 
 mod docker;
 mod error;
 mod tui;
+mod utils;
 #[cfg(test)]
 mod tests;
 
 use crate::docker::DockerClient;
 use crate::tui::App;
 
-fn format_duration(timestamp: i64) -> String {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        .try_into()
-        .unwrap_or(i64::MAX);
-    let duration = now - timestamp;
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Refresh rate in milliseconds
+    #[arg(short, long, default_value_t = 250)]
+    refresh_rate: u64,
 
-    if duration < 60 {
-        format!("{duration} seconds ago")
-    } else if duration < 3600 {
-        format!("{} minutes ago", duration / 60)
-    } else if duration < 86400 {
-        format!("{} hours ago", duration / 3600)
-    } else {
-        format!("{} days ago", duration / 86400)
-    }
+    /// Log level (error, warn, info, debug, trace)
+    #[arg(short, long, default_value = "info")]
+    log_level: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
+    
+    // Initialize logging
+    env_logger::Builder::from_env(env_logger::Env::default())
+        .filter_level(args.log_level.parse().unwrap_or(log::LevelFilter::Info))
+        .init();
+
+    info!("Starting cetacea with refresh rate: {}ms", args.refresh_rate);
+    
     let client = DockerClient::new();
     let mut containers = client.list_containers().await?;
     
@@ -41,14 +44,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     containers.sort_by(|a, b| {
         let state_order = b.state.cmp(&a.state);
         if state_order == std::cmp::Ordering::Equal {
-            a.names[0].cmp(&b.names[0])
+            let a_name = a.names.first().map_or("", |s| s.as_str());
+            let b_name = b.names.first().map_or("", |s| s.as_str());
+            a_name.cmp(b_name)
         } else {
             state_order
         }
     });
 
-    let mut app = App::new(containers, client);
-    app.run()?;
+    info!("Found {} containers", containers.len());
+    
+    let app = App::new(containers, client);
+    app.run_with_options(std::time::Duration::from_millis(args.refresh_rate))?;
 
     Ok(())
 }

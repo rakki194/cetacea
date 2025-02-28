@@ -6,7 +6,6 @@ mod tests {
     fn create_test_container(name: &str, state: &str) -> Container {
         Container {
             id: "test_id".to_string(),
-            image_id: "test_image_id".to_string(),
             names: vec![name.to_string()],
             image: "test_image".to_string(),
             command: "test_command".to_string(),
@@ -44,8 +43,6 @@ mod tests {
         let mut container = create_test_container("test", "running");
         container.health = Some(Health {
             status: "healthy".to_string(),
-            failing_streak: 0,
-            log: vec![],
         });
 
         let client = DockerClient::new();

@@ -1,43 +1,53 @@
-# Cetacea 🐋
+# Cetacea
 
-A sleek, terminal-based Docker container monitoring tool with a beautiful TUI interface. Monitor your Docker containers in real-time with an intuitive, responsive interface.
+A terminal UI Docker container monitor built with Rust.
 
 ## Features
 
-- **Real-time Monitoring**: Live updates of container status every second
-- **Beautiful TUI**: Clean, responsive terminal user interface using [ratatui](https://github.com/ratatui-org/ratatui)
-- **Container Information**:
-  - Container name and ID
-  - Image details
-  - Running state and health status
+- Real-time container monitoring
+- Status indicators for running/stopped containers
+- Health check status display
+- Container details including:
+  - Image name
+  - Command
+  - Creation time
+  - Status
   - Port mappings
-  - Creation time and uptime
-  - Command information
-- **Smart Layout**: Automatically adjusts to terminal size with responsive grid layout
-- **Color Coding**:
-  - Green: Running and healthy containers
-  - Yellow: Running containers with uncertain health
-  - Red: Stopped containers or unhealthy state
-- **Cross-platform**: Supports both Linux (Unix socket) and Windows (HTTP) connections
-
-## Installation
-
-```bash
-cargo install cetacea
-```
+- Automatic refresh of container status
+- Responsive grid layout that adapts to terminal size
 
 ## Usage
 
-Simply run:
-
 ```bash
+# Run with default settings (250ms refresh rate)
 cetacea
+
+# Run with custom refresh rate (e.g., 1 second)
+cetacea -r 1000
 ```
 
-### Controls
+### Options
+
+- `-r, --refresh-rate <MS>`: Set the refresh rate in milliseconds (default: 250)
+- `-h, --help`: Show help information
+- `-V, --version`: Show version information
+
+## Controls
 
 - `q`: Quit the application
-- Terminal resize: UI automatically adjusts
+
+## Requirements
+
+- Docker daemon running and accessible via Unix socket
+- Rust 1.70 or later
+
+## Building
+
+```bash
+cargo build --release
+```
+
+The binary will be available at `target/release/cetacea`.
 
 ## Development
 
